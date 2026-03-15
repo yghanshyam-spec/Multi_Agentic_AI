@@ -3,7 +3,7 @@ agents/router/agents/specialist_agent.py
 Specialist agent for router — extends BaseRouterAgent with domain logic.
 """
 from __future__ import annotations
-from agents.router.agents.base_agent import BaseRouterAgent
+from agents.router.sub_agents.base_agent import BaseRouterAgent
 
 
 class RouterSpecialistAgent(BaseRouterAgent):

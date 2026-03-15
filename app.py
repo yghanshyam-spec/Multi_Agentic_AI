@@ -479,9 +479,9 @@ def _render_results(result: PipelineResult, ruc: dict, show_raw: bool,
 # ─────────────────────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("### ◉ Agentic AI Accelerator")
-    st.caption("Multi-agent pipeline · 21 agents · 5 UCs + custom · v4")
-    st.divider()
+    # st.markdown("### ◉ Agentic AI Accelerator")
+    # st.caption("Multi-agent pipeline · 21 agents · 5 UCs + custom · v4")
+    # st.divider()
 
     # st.markdown("**API Configuration**")
     # api_key = st.text_input("Anthropic API Key", type="password",
@@ -493,11 +493,13 @@ with st.sidebar:
     #     st.info("ℹ Using Mock LLM (no key required)")
 
     # st.divider()
-    st.markdown("**Mode**")
-    mode = st.radio("Mode", ["Production Use Cases","✨ Custom (Auto-Orchestrated)"],
-                    label_visibility="collapsed")
+    # st.markdown("**Mode**")
+    # mode = st.radio("Mode", ["Production Use Cases","✨ Custom (Auto-Orchestrated)"],
+    #                 label_visibility="collapsed")
 
-    if mode == "Production Use Cases":
+    mode = st.radio("Mode", ["Use Cases"], label_visibility="collapsed")
+    
+    if mode == "Use Cases":
         selected_label = st.selectbox("Use Case", UC_LABELS, label_visibility="collapsed")
         selected_uc = _uc_by_label(selected_label)
         bc = selected_uc["badge_color"]
@@ -549,12 +551,15 @@ else:
 
 st.markdown(f"""
 <div style='margin-bottom:1.8rem;padding-bottom:1.2rem;border-bottom:1px solid #e5e7eb;'>
-    <div style='font-size:11px;color:#1d4ed8;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:6px;'>
-        ◉ LangGraph Multi-Agent Pipeline · Generalised Orchestration Layer · v4
-    </div>
     <h1 style='margin:0;'>Agentic AI Accelerator</h1>
-    <p style='color:#6b7280;font-size:14px;margin-top:4px;'>{preview}</p>
 </div>""", unsafe_allow_html=True)
+# <div style='margin-bottom:1.8rem;padding-bottom:1.2rem;border-bottom:1px solid #e5e7eb;'>
+#     <div style='font-size:11px;color:#1d4ed8;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:6px;'>
+#         ◉ LangGraph Multi-Agent Pipeline · Generalised Orchestration Layer · v4
+#     </div>
+#     <h1 style='margin:0;'>Agentic AI Accelerator</h1>
+#     <p style='color:#6b7280;font-size:14px;margin-top:4px;'>{preview}</p>
+# </div>""", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -745,45 +750,45 @@ if "pipeline_result" in st.session_state:
 
 elif not run_btn:
     cards = ""
-    for uc in USE_CASES:
-        bcc = uc["badge_color"]
-        ag  = " · ".join(uc["agents"][:5]) + (" · …" if len(uc["agents"])>5 else "")
-        cards += f"""
-    <div style='background:{bcc}0d;border:1px solid {bcc}30;border-radius:9px;padding:14px 16px;'>
-      <div style='color:{bcc};font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;'>{uc["short"]} — {uc["agent_count"]} agents</div>
-      <div style='color:#1f2937;margin-top:4px;font-size:13px;font-weight:600;'>{uc["label"].split(" · ")[1].rsplit("  ",1)[0]}</div>
-      <div style='color:#6b7280;margin-top:4px;font-size:11px;line-height:1.5;'>{uc["description"]}</div>
-      <div style='margin-top:6px;font-family:JetBrains Mono;font-size:10px;color:{bcc};'>{ag}</div>
-    </div>"""
+    # for uc in USE_CASES:
+    #     bcc = uc["badge_color"]
+    #     ag  = " · ".join(uc["agents"][:5]) + (" · …" if len(uc["agents"])>5 else "")
+    #     cards += f"""
+    # <div style='background:{bcc}0d;border:1px solid {bcc}30;border-radius:9px;padding:14px 16px;'>
+    #   <div style='color:{bcc};font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;'>{uc["short"]} — {uc["agent_count"]} agents</div>
+    #   <div style='color:#1f2937;margin-top:4px;font-size:13px;font-weight:600;'>{uc["label"].split(" · ")[1].rsplit("  ",1)[0]}</div>
+    #   <div style='color:#6b7280;margin-top:4px;font-size:11px;line-height:1.5;'>{uc["description"]}</div>
+    #   <div style='margin-top:6px;font-family:JetBrains Mono;font-size:10px;color:{bcc};'>{ag}</div>
+    # </div>"""
 
-    st.markdown(f"""
-<div style='background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:28px 32px;margin:12px 0;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>
-  <h3 style='margin-top:0;color:#111827;'>Generalised Multi-Agent Pipeline — 21 Agents · 5 Use Cases + Custom</h3>
-  <p style='color:#6b7280;line-height:1.7;'>
-    Choose a <b>production use case</b> from the sidebar or switch to <b>✨ Custom</b> to type any
-    business request — the AutoOrchestrator selects agents and builds the pipeline automatically.
-  </p>
-  <div style='background:#f0f9ff;border:1px solid #bae6fd;border-radius:9px;padding:12px 16px;margin:14px 0;'>
-    <b style='color:#0369a1;font-size:12px;'>✨ Custom Mode</b>
-    <span style='color:#0c4a6e;font-size:12px;'> — Type any prompt. The LLM analyses intent, selects from all 21 agents,
-    builds the pipeline via <code>auto_orchestrator.py</code>, and streams AgentResponse messages between agents.</span>
-  </div>
-  <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;'>{cards}</div>
-  <div style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:14px;'>
-    <div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:10px;'>
-      <div style='color:#1d4ed8;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 0</div>
-      <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>Router</b></div></div>
-    <div style='background:#f5f3ff;border:1px solid #ddd6fe;border-radius:9px;padding:10px;'>
-      <div style='color:#7c3aed;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 1</div>
-      <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>Intent · Planner · Workflow</b></div></div>
-    <div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:10px;'>
-      <div style='color:#059669;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 2</div>
-      <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>14 agents</b> — Intel · Data · Integration</div></div>
-    <div style='background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:10px;'>
-      <div style='color:#dc2626;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 3</div>
-      <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>HITL · Execution · Audit · Notif · Scheduling</b></div></div>
-  </div>
-  <div style='margin-top:14px;padding:10px 14px;background:#f8f9fb;border-radius:8px;font-family:JetBrains Mono;font-size:11px;color:#6b7280;'>
-    💡 No API key required — runs fully offline with the deterministic Mock LLM
-  </div>
-</div>""", unsafe_allow_html=True)
+#     st.markdown(f"""
+# <div style='background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:28px 32px;margin:12px 0;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>
+#   <h3 style='margin-top:0;color:#111827;'>Generalised Multi-Agent Pipeline — 21 Agents · 5 Use Cases + Custom</h3>
+#   <p style='color:#6b7280;line-height:1.7;'>
+#     Choose a <b>production use case</b> from the sidebar or switch to <b>✨ Custom</b> to type any
+#     business request — the AutoOrchestrator selects agents and builds the pipeline automatically.
+#   </p>
+#   <div style='background:#f0f9ff;border:1px solid #bae6fd;border-radius:9px;padding:12px 16px;margin:14px 0;'>
+#     <b style='color:#0369a1;font-size:12px;'>✨ Custom Mode</b>
+#     <span style='color:#0c4a6e;font-size:12px;'> — Type any prompt. The LLM analyses intent, selects from all 21 agents,
+#     builds the pipeline via <code>auto_orchestrator.py</code>, and streams AgentResponse messages between agents.</span>
+#   </div>
+#   <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;'>{cards}</div>
+#   <div style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:14px;'>
+#     <div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:10px;'>
+#       <div style='color:#1d4ed8;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 0</div>
+#       <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>Router</b></div></div>
+#     <div style='background:#f5f3ff;border:1px solid #ddd6fe;border-radius:9px;padding:10px;'>
+#       <div style='color:#7c3aed;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 1</div>
+#       <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>Intent · Planner · Workflow</b></div></div>
+#     <div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:10px;'>
+#       <div style='color:#059669;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 2</div>
+#       <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>14 agents</b> — Intel · Data · Integration</div></div>
+#     <div style='background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:10px;'>
+#       <div style='color:#dc2626;font-size:10px;font-weight:600;text-transform:uppercase;'>Layer 3</div>
+#       <div style='color:#1f2937;font-size:12px;margin-top:2px;'><b>HITL · Execution · Audit · Notif · Scheduling</b></div></div>
+#   </div>
+#   <div style='margin-top:14px;padding:10px 14px;background:#f8f9fb;border-radius:8px;font-family:JetBrains Mono;font-size:11px;color:#6b7280;'>
+#     💡 No API key required — runs fully offline with the deterministic Mock LLM
+#   </div>
+# </div>""", unsafe_allow_html=True)

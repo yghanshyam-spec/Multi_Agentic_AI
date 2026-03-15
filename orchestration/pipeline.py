@@ -4,6 +4,15 @@ orchestration/pipeline.py
 Generalised Orchestration Layer — use-case agnostic.
 
 All 21 agents registered. Agent folder names follow clean naming (no _agent suffix).
+
+Router agent flow
+-----------------
+The Router agent is the Layer-0 entry-point.  The pipeline builds its graph
+ONCE at import time and injects the pre-compiled graph into every run_router()
+call, avoiding repeated graph compilation per request::
+
+    graph = build_router_graph()          # compile once
+    result = run_router(input, graph=graph)   # invoke N times
 """
 from __future__ import annotations
 
@@ -16,12 +25,30 @@ from shared.langfuse_manager import get_tracer
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ROUTER GRAPH — compiled once at module load, reused for every pipeline run
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _build_router_graph():
+    """
+    Compile the Router LangGraph once at module load.
+    Returns None if langgraph is not installed (engine falls back automatically).
+    """
+    try:
+        from agents.router.workflows.create_graph import build_router_graph
+        return build_router_graph()
+    except Exception:
+        return None
+
+_ROUTER_GRAPH = _build_router_graph()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # AGENT REGISTRY — maps string keys to runner functions
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _load_agents() -> Dict[str, Callable]:
     """Lazy-import all 21 agent runners. Allows partial availability."""
-    from agents.router.graph       import run_router
+    from agents.router.core.engine import run_router
     from agents.intent.graph       import run_intent_agent
     from agents.planner.graph      import run_planner_agent
     from agents.workflow.graph     import run_workflow_agent
@@ -189,6 +216,10 @@ class AgentStepRunner:
         if "agent_config" in extra_kwargs:
             merged_config = {**merged_config, **extra_kwargs.pop("agent_config")}
 
+        # ── Inject the pre-compiled router graph for the router step ─────────
+        if step.agent == "router" and _ROUTER_GRAPH is not None:
+            extra_kwargs.setdefault("graph", _ROUTER_GRAPH)
+
         t0 = time.monotonic()
         try:
             state = fn(
@@ -238,12 +269,12 @@ def run_pipeline(
     started_at = utc_now()
     t_total    = time.monotonic()
 
-    steps_ordered   = _topo_sort(use_case.steps)
-    runner          = AgentStepRunner(agents, sid, use_case.global_config)
-    pipeline_ctx    : Dict[str, Any] = {}
-    all_results     : List[StepResult] = []
-    all_audit_events: List[dict] = []
-    final_output    : Dict[str, Any] = {}
+    steps_ordered    = _topo_sort(use_case.steps)
+    runner           = AgentStepRunner(agents, sid, use_case.global_config)
+    pipeline_ctx     : Dict[str, Any] = {}
+    all_results      : List[StepResult] = []
+    all_audit_events : List[dict] = []
+    final_output     : Dict[str, Any] = {}
 
     tracer = get_tracer("orchestration")
 
@@ -306,8 +337,12 @@ def run_pipeline(
 
 def _extract_key_output(agent: str, state: dict) -> dict:
     extractors = {
-        "router":        lambda s: {"agents_activated": s.get("activated_agents", []),
-                                    "final_response": (s.get("final_response") or "")[:300]},
+        "router":        lambda s: {
+                             "agents_activated": s.get("activated_agents", []),
+                             "final_response":   (s.get("final_response") or "")[:300],
+                             # also surface the structured AgentResponse envelope
+                             "agent_response":   s.get("agent_response", {}),
+                         },
         "intent":        lambda s: {"primary_intent": s.get("primary_intent"),
                                     "sub_tasks": len(s.get("sub_tasks", []))},
         "planner":       lambda s: {"plan_id": s.get("plan_id"),

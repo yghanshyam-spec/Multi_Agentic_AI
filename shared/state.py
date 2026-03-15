@@ -222,6 +222,16 @@ class SchedulerAgentState(BaseAgentState):
     final_response:      Optional[str]
 
 
+class RouterAgentState(BaseAgentState):
+    required_agents:     list[str]
+    parallel_safe:       bool
+    priority:            str
+    load_metrics:        dict
+    routing_plan:        Optional[dict]
+    activated_agents:    list[str]
+    agent_results:       Annotated[list, operator.add]
+    final_response:      Optional[str]
+
 class IntentAgentState(BaseAgentState):
     detected_intents:    list[dict]
     primary_intent:      Optional[str]

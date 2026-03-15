@@ -1,68 +1,71 @@
 """
 agents/router/workflows/nodes/orchestrate_response_node.py
 ============================================================
-Node function: ``orchestrate_response_node``
+Node: ``orchestrate_response_node``
 
-Single-responsibility node — part of the router LangGraph workflow.
+LLM node — synthesises all activated-agent results into a single coherent
+response and sets agent_response to a standard AgentResponse envelope.
+
+Tracing & prompts: shared.langfuse_manager only (via shared.common).
+No local langfuse_client or prompt_manager.
 """
 from __future__ import annotations
 import os
-import time, json, re, hashlib
-from typing import Any, Optional
+import time
 
 from shared.common import (
-    get_llm, call_llm, get_prompt, log_llm_call, get_tracer,
-    make_audit_event, build_trace_entry, make_base_state, new_id, utc_now,
-    ExecutionStatus, build_agent_response, AgentType, safe_get, truncate_text,
-
-    get_last_token_usage,
+    get_llm, call_llm, get_prompt, log_llm_call,
+    make_audit_event, build_trace_entry,
+    build_agent_response, ExecutionStatus, get_last_token_usage,
 )
+from shared.state import RouterAgentState, AgentResponse
 from agents.router.prompts.defaults import get_default_prompt
-from agents.router.tools.load_monitor import LoadMonitor, AGENT_REGISTRY
-# router_nodes circular import removed
+from agents.router.tools.load_monitor import AGENT_REGISTRY
 
-# ── Module-level constants ────────────────────────────────────────────────────
-# (none)
+_AGENT_NAME = "router"
 
-# ── Tool instances ────────────────────────────────────────────────────────────
-_load_monitor = LoadMonitor()
 
-# ── Private helpers ────────────────────────────────────────────────────────────
-def _agent_list(state: RouterAgentState) -> list:
-    return state.get("config", {}).get("agent_registry", AGENT_REGISTRY)
-
-def _get_prompt(key: str, state: RouterAgentState, **kwargs) -> str:
-    consumer_override = state.get("config", {}).get("prompts", {}).get(key)
-    fallback = consumer_override or get_default_prompt(f"router_{key}")
-    return get_prompt(f"router_{key}", agent_name="router", fallback=fallback, **kwargs)
-
-# ── Prompt resolver ───────────────────────────────────────────────────────────
-def _p(key, state, **kw):
-    fb = state.get("config", {}).get("prompts", {}).get(key) or get_default_prompt(f"router_{key}")
-    return get_prompt(f"router_{key}", agent_name="router", fallback=fb, **kw)
+def _p(key: str, state: RouterAgentState, **kwargs) -> str:
+    """Resolve prompt: shared.langfuse_manager registry → consumer config → built-in default."""
+    fallback = (
+        state.get("config", {}).get("prompts", {}).get(key)
+        or get_default_prompt(f"router_{key}")
+    )
+    return get_prompt(f"router_{key}", agent_name=_AGENT_NAME, fallback=fallback, **kwargs)
 
 
 def orchestrate_response_node(state: RouterAgentState) -> dict:
     """
-    LLM node: synthesises all agent results into a single coherent response.
-    Prompt sourced from: Langfuse registry → consumer config → built-in default.
+    LLM node — synthesises all agent results into one coherent response.
+
+    Sets ``agent_response`` to a standard AgentResponse TypedDict so the
+    pipeline can extract a structured output envelope.
+
+    Prompt resolution: Langfuse registry → consumer config override → built-in default.
     """
-    t0 = time.monotonic()
-    partial = state.get("partial_results", [])
-    sys_prompt  = _get_prompt("orchestrate_response", state)
+    t0          = time.monotonic()
+    partial     = state.get("partial_results", [])
+    sys_prompt  = _p("orchestrate_response", state)
     user_prompt = (
         f"Original request: {state['raw_input']}\n"
         f"Agent results: {partial}"
     )
+
     llm    = get_llm()
     result = call_llm(llm, sys_prompt, user_prompt, node_hint="orchestrate_response")
-    log_llm_call("router_agent", "orchestrate_response_node", os.getenv("ANTHROPIC_MODEL", os.getenv("OPENAI_MODEL", "claude-sonnet-4-6")),
-                 sys_prompt[:200], str(result), session_id=state.get("session_id", ""))
+    log_llm_call(
+        "router_agent", "orchestrate_response_node",
+        os.getenv("ANTHROPIC_MODEL", os.getenv("OPENAI_MODEL", "claude-sonnet-4-6")),
+        sys_prompt[:200], str(result),
+        session_id=state.get("session_id", ""),
+        token_usage=get_last_token_usage(),
+    )
 
-    summary = result.get("summary", "All agents completed their assigned tasks successfully.")
+    summary     = result.get("summary", "All agents completed their assigned tasks successfully.")
     duration_ms = int((time.monotonic() - t0) * 1000)
 
-    response = build_agent_response(
+    # Build the standard AgentResponse envelope
+    agent_response: AgentResponse = build_agent_response(
         state,
         payload={
             "summary":          summary,
@@ -72,12 +75,14 @@ def orchestrate_response_node(state: RouterAgentState) -> dict:
         },
         confidence_score=0.92,
     )
+
     return {
         "final_response":  summary,
-        "agent_response":  dict(response),
+        "agent_response":  dict(agent_response),
         "status":          ExecutionStatus.COMPLETED,
         "current_node":    "orchestrate_response_node",
         "execution_trace": [build_trace_entry("orchestrate_response_node", duration_ms, 300)],
-        "audit_events":    [make_audit_event(state, "orchestrate_response_node",
-                            "ORCHESTRATION_COMPLETE")],
+        "audit_events":    [make_audit_event(
+            state, "orchestrate_response_node", "ORCHESTRATION_COMPLETE"
+        )],
     }

@@ -3,43 +3,87 @@ agents/router/workflows/create_graph.py
 =========================================
 LangGraph graph assembly for the Router agent.
 
-The graph is defined here and compiled once.  Individual node functions
-live in workflows/nodes/ — one file per node.
+Called by pipeline.py ONCE at startup to compile the graph::
 
-Usage
------
     from agents.router.workflows.create_graph import build_router_graph
     graph = build_router_graph()
-    result = graph.invoke(initial_state)
+
+The compiled graph is then passed into run_router() in engine.py::
+
+    from agents.router.core.engine import run_router
+    result = run_router(raw_input, graph=graph, ...)
+
+Individual node functions live in workflows/nodes/ — one file per node.
+The graph is typed against RouterAgentState from shared.state.
+Tracing: shared.langfuse_manager only — no local langfuse_client or prompt_manager.
 """
 from __future__ import annotations
 
 try:
     from langgraph.graph import StateGraph, END
-    _LG = True
+    from langgraph.checkpoint.memory import MemorySaver
+    _LG_AVAILABLE = True
 except ImportError:
-    _LG = False
+    _LG_AVAILABLE = False
+
+from shared.state import RouterAgentState
+from shared.common import get_tracer, get_logger
+
+from agents.router.workflows.nodes import (
+    analyse_request_node,
+    monitor_load_node,
+    plan_routing_node,
+    activate_agents_node,
+    monitor_execution_node,
+    collect_results_node,
+    orchestrate_response_node,
+)
+
+logger = get_logger(__name__)
 
 
 def build_router_graph():
     """
     Assemble and compile the Router LangGraph workflow.
 
-    Node functions are imported from workflows/nodes/.
-    Returns a compiled graph, or None if LangGraph is not installed.
+    Returns a compiled StateGraph[RouterAgentState], or None if LangGraph
+    is not installed (engine.py will fall back to imperative node execution).
+
+    Graph topology (linear — no conditional edges):
+        analyse_request_node
+            → monitor_load_node
+            → plan_routing_node
+            → activate_agents_node
+            → monitor_execution_node
+            → collect_results_node
+            → orchestrate_response_node
+            → END
     """
-    if not _LG:
+    if not _LG_AVAILABLE:
+        logger.warning("[build_router_graph] langgraph not installed — returning None.")
         return None
 
-    # Import all node functions from their individual files
-    # from agents.router.workflows.nodes.my_node import my_node_fn
+    graph = StateGraph(RouterAgentState)
 
-    # Build graph (populate with actual nodes for this agent)
-    from shared import BaseAgentState
-    g = StateGraph(dict)
+    # ── Register nodes ────────────────────────────────────────────────────────
+    graph.add_node("analyse_request_node",      analyse_request_node)
+    graph.add_node("monitor_load_node",         monitor_load_node)
+    graph.add_node("plan_routing_node",         plan_routing_node)
+    graph.add_node("activate_agents_node",      activate_agents_node)
+    graph.add_node("monitor_execution_node",    monitor_execution_node)
+    graph.add_node("collect_results_node",      collect_results_node)
+    graph.add_node("orchestrate_response_node", orchestrate_response_node)
 
-    # Example: g.add_node("my_node", my_node_fn)
-    # g.set_entry_point("my_node")
-    # g.add_edge("my_node", END)
+    # ── Wire edges ────────────────────────────────────────────────────────────
+    graph.set_entry_point("analyse_request_node")
+    graph.add_edge("analyse_request_node",      "monitor_load_node")
+    graph.add_edge("monitor_load_node",         "plan_routing_node")
+    graph.add_edge("plan_routing_node",         "activate_agents_node")
+    graph.add_edge("activate_agents_node",      "monitor_execution_node")
+    graph.add_edge("monitor_execution_node",    "collect_results_node")
+    graph.add_edge("collect_results_node",      "orchestrate_response_node")
+    graph.add_edge("orchestrate_response_node", END)
 
-    return g.compile()
+    compiled = graph.compile(checkpointer=MemorySaver())
+    logger.info("[build_router_graph] Router graph compiled (7 nodes).")
+    return compiled
