@@ -54,7 +54,7 @@ def _load_agents() -> Dict[str, Callable]:
     from agents.workflow.graph     import run_workflow_agent
     from agents.reasoning.graph    import run_reasoning_agent
     from agents.generator.graph    import run_generator_agent
-    from agents.communication.graph import run_communication_agent
+    from agents.communication.core.engine import run_communication_agent
     from agents.execution.graph    import run_execution_agent, run_hitl_agent, run_audit_agent
     from agents.translation.graph  import run_translation_agent
     from agents.email_handler.graph import run_email_handler_agent

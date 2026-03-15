@@ -180,7 +180,7 @@ class TestGeneratorAgent:
 
 class TestCommunicationAgent:
     def test_run(self):
-        from agents.communication.graph import run_communication_agent
+        from agents.communication.core.engine import run_communication_agent
         state = run_communication_agent("Notify stakeholders: incident resolved", channel="email")
         assert state["status"] == ExecutionStatus.COMPLETED
         assert state.get("draft_response") is not None

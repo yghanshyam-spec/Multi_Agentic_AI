@@ -43,9 +43,9 @@ _ENV_FILE = _SCRIPT_DIR / ".env"
 if _ENV_FILE.exists():
     load_dotenv(_ENV_FILE, override=True)
 
-from communication.core.engine import CommunicationAgentEngine
-from communication.schemas.output_models import AgentResponse, BroadcastResponse
-from communication.utils.logger import get_logger
+from agents.communication.core.engine import CommunicationAgentEngine
+from agents.communication.schemas.output_models import AgentResponse, BroadcastResponse
+from agents.communication.utils.logger import get_logger
 
 logger = get_logger("uc2_runner")
 
