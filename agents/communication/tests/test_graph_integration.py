@@ -158,7 +158,7 @@ def test_omnichannel_nodes_factory(mock_llm, mock_pm):
     from tools.communication_tools import (
         ContextMemoryTool, ChannelDispatcher, CRMLogTool, AuditLogTool
     )
-    from agents.specialist_agent import CommunicationSpecialistAgent
+    from sub_agents.specialist_agent import CommunicationSpecialistAgent
     from workflows.nodes.omnichannel_nodes import make_omnichannel_nodes
 
     agent = CommunicationSpecialistAgent(mock_llm, mock_pm)
@@ -183,7 +183,7 @@ def test_broadcast_nodes_factory(mock_llm, mock_pm):
     from tools.communication_tools import (
         ContextMemoryTool, ChannelDispatcher, CRMLogTool, AuditLogTool
     )
-    from agents.specialist_agent import CommunicationSpecialistAgent
+    from sub_agents.specialist_agent import CommunicationSpecialistAgent
     from workflows.nodes.broadcast_nodes import make_broadcast_nodes
 
     agent = CommunicationSpecialistAgent(mock_llm, mock_pm)
@@ -209,7 +209,7 @@ def test_detect_channel_node_email(mock_llm, mock_pm):
     from tools.communication_tools import (
         ContextMemoryTool, ChannelDispatcher, CRMLogTool, AuditLogTool
     )
-    from agents.specialist_agent import CommunicationSpecialistAgent
+    from sub_agents.specialist_agent import CommunicationSpecialistAgent
     from workflows.nodes.omnichannel_nodes import make_omnichannel_nodes
 
     agent = CommunicationSpecialistAgent(mock_llm, mock_pm)
@@ -243,7 +243,7 @@ def test_classify_escalation_keywords(mock_llm, mock_pm):
     from tools.communication_tools import (
         ContextMemoryTool, ChannelDispatcher, CRMLogTool, AuditLogTool
     )
-    from agents.specialist_agent import CommunicationSpecialistAgent
+    from sub_agents.specialist_agent import CommunicationSpecialistAgent
     from workflows.nodes.omnichannel_nodes import make_omnichannel_nodes
 
     agent = CommunicationSpecialistAgent(mock_llm, mock_pm)

@@ -89,7 +89,7 @@ try:
         ContextMemoryTool, ChannelDispatcher, CRMLogTool, AuditLogTool,
     )
     from shared.langfuse_manager import get_prompt as _get_prompt_lf
-    from communication.agents.specialist_agent import CommunicationSpecialistAgent
+    from communication.sub_agents.specialist_agent import CommunicationSpecialistAgent
     from communication.workflows.create_graph import GraphFactory
     from communication.workflows.nodes.omnichannel_nodes import make_omnichannel_nodes
     from communication.workflows.nodes.broadcast_nodes import make_broadcast_nodes

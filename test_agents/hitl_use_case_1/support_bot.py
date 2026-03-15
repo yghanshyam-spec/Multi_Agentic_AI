@@ -26,7 +26,7 @@ from agent_hitl.ui_adapters.streamlit_adapter import StreamlitAdapter
 
 from agent_hitl.schemas.graph_state import HITLState
 from agent_hitl.workflows.graph_builder import GraphBuilder
-from agents.hitl.agents.base_agent import BaseAgent
+from agents.hitl.sub_agents.base_agent import BaseAgent
 from agent_hitl.ui_adapters.api_adapter import APIAdapter
 from agent_hitl.utils.helpers import create_initial_state
 from agent_hitl.utils.logger import get_logger

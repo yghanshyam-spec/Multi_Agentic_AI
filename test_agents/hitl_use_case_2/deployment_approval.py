@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 from agent_hitl.schemas.graph_state import HITLState
 from agent_hitl.workflows.graph_builder import GraphBuilder
-from agents.hitl.agents.base_agent import BaseAgent
+from agents.hitl.sub_agents.base_agent import BaseAgent
 from agent_hitl.ui_adapters.api_adapter import APIAdapter
 from agent_hitl.persistence.sqlite_store import SQLiteStore
 from agent_hitl.core.resume_handler import ResumeHandler

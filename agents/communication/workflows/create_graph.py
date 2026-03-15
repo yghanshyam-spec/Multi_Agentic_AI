@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Optional
 
 from langgraph.graph import StateGraph, END
 
-from communication.agents.specialist_agent import CommunicationSpecialistAgent
+from communication.sub_agents.specialist_agent import CommunicationSpecialistAgent
 from communication.tools.communication_tools import (
     ContextMemoryTool, ChannelDispatcher, CRMLogTool, AuditLogTool
 )

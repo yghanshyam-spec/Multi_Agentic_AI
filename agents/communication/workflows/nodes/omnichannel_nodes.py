@@ -13,7 +13,7 @@ import json
 import uuid
 from typing import Any, Dict
 
-from communication.agents.specialist_agent import CommunicationSpecialistAgent
+from communication.sub_agents.specialist_agent import CommunicationSpecialistAgent
 from communication.tools.communication_tools import ContextMemoryTool, ChannelDispatcher, CRMLogTool, AuditLogTool
 from shared.common import get_logger
 from communication.utils.helpers import now_iso, generate_thread_id, word_count, sentiment_hint

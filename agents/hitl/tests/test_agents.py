@@ -7,7 +7,7 @@ Unit tests for individual agent classes.
 import pytest
 from unittest.mock import MagicMock
 from langchain_core.messages import AIMessage
-from agents.specialist_agent import SpecialistAgent
+from sub_agents.specialist_agent import SpecialistAgent
 
 
 @pytest.fixture
