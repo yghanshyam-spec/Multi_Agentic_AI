@@ -1,0 +1,19 @@
+# agents/scheduling/guardrails/policies.yaml
+# Safety and ethics policies for the SchedulingAgent agent.
+# These are enforced by the policy engine before LLM calls.
+
+policies:
+  - name: input_length
+    description: Reject inputs exceeding token limit
+    max_chars: 32000
+    action: reject
+
+  - name: pii_detection
+    description: Flag potential PII in inputs
+    enabled: true
+    action: redact
+
+  - name: content_safety
+    description: Block harmful or unsafe content
+    enabled: true
+    action: reject

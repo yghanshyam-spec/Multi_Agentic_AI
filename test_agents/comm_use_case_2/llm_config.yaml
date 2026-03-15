@@ -1,0 +1,30 @@
+# ============================================================
+# config/llm_config.yaml
+# ============================================================
+
+llm:
+  provider: "${LLM_PROVIDER:openai}"
+  temperature: 0.3
+  max_tokens: 2048
+  streaming: false
+  timeout: 60
+
+  providers:
+    openai:
+      model: "gpt-4o"
+      temperature: 0.3
+      max_tokens: 2048
+    anthropic:
+      model: "claude-sonnet-4-20250514"
+      temperature: 0.3
+      max_tokens: 2048
+    azure_openai:
+      model: "${AZURE_OPENAI_DEPLOYMENT:gpt-4o}"
+      api_version: "${AZURE_OPENAI_API_VERSION:2024-02-01}"
+      temperature: 0.3
+      max_tokens: 2048
+
+  retry:
+    max_attempts: 3
+    wait_seconds: 2
+    backoff_factor: 2

@@ -1,0 +1,10 @@
+# agents/communication/config/config.yaml
+agent:
+  name: communication_agent
+  version: "4.0"
+llm:
+  temperature: 0.2
+  max_tokens: 2048
+channels:
+  default: email
+  supported: [email, slack, sms, webhook, chat]

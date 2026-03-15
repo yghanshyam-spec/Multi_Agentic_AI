@@ -1,0 +1,8 @@
+# agents/generator/guardrails/policies.yaml
+policies:
+  - id: no_pii_in_generated_docs
+    rule: "Generated documents must not include raw PII (SSN, passport numbers)."
+    severity: high
+  - id: content_length_limit
+    rule: "Generated documents should not exceed 50,000 tokens."
+    severity: medium

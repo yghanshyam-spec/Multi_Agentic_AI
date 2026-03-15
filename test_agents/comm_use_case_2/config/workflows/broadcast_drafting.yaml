@@ -1,0 +1,118 @@
+# ============================================================
+# config/workflows/broadcast_drafting.yaml
+# Use Case 2: Internal Broadcast Drafting
+# ============================================================
+
+workflow:
+  name: "broadcast_drafting"
+  description: >
+    Drafts channel-specific versions of internal communications (email, Slack,
+    memo) from bullet-point talking points, with cross-channel consistency check.
+  entry_point: "detect_channel_node"
+  state_schema: "agent_communication.schemas.graph_state.BroadcastState"
+
+node_config:
+  broadcast:
+    max_history_entries: 10
+    default_channels:
+      - email
+      - slack
+      - memo
+    auto_fix_contradictions: true
+
+  channel_rules:
+    email:
+      tone: "professional_warm"
+      max_words: 400
+      format: "structured_paragraphs"
+      subject_prefix: "[Company Update]"
+      greeting: "Dear Team,"
+      signature: "Best regards,\nThe Leadership Team"
+    slack:
+      tone: "conversational_direct"
+      max_words: 150
+      format: "bullet_points"
+      use_emoji: true
+      thread_replies: false
+    memo:
+      tone: "formal_authoritative"
+      max_words: 600
+      format: "formal_memo"
+      sections:
+        - "TO"
+        - "FROM"
+        - "DATE"
+        - "RE"
+        - "BACKGROUND"
+        - "POLICY CHANGE"
+        - "EFFECTIVE DATE"
+        - "ACTION REQUIRED"
+    teams:
+      tone: "professional"
+      max_words: 200
+      format: "card_with_bullets"
+    default:
+      tone: "professional"
+      max_words: 300
+      format: "plain_text"
+
+nodes:
+  - id: "detect_channel_node"
+    type: "logic_node"
+    description: "Normalise broadcast input, extract target channels"
+
+  - id: "load_context_node"
+    type: "memory_node"
+    description: "Load prior broadcast context for this session"
+
+  - id: "classify_message_node"
+    type: "logic_node"
+    description: "Classify as broadcast task (always automated_response)"
+
+  - id: "draft_response_node"
+    type: "llm_node"
+    description: "Draft channel-specific versions for each target channel"
+
+  - id: "check_consistency_node"
+    type: "llm_node"
+    description: "Check all drafts are factually consistent with each other"
+
+  - id: "dispatch_response_node"
+    type: "tool_node"
+    description: "Dispatch each draft to its target channel adapter"
+
+  - id: "update_context_node"
+    type: "memory_node"
+    description: "Persist all drafts, delivery status, and audit log"
+
+  - id: "end"
+    type: "end_node"
+
+edges:
+  - from: "detect_channel_node"
+    to: "load_context_node"
+    type: "direct"
+
+  - from: "load_context_node"
+    to: "classify_message_node"
+    type: "direct"
+
+  - from: "classify_message_node"
+    to: "draft_response_node"
+    type: "direct"
+
+  - from: "draft_response_node"
+    to: "check_consistency_node"
+    type: "direct"
+
+  - from: "check_consistency_node"
+    to: "dispatch_response_node"
+    type: "direct"
+
+  - from: "dispatch_response_node"
+    to: "update_context_node"
+    type: "direct"
+
+  - from: "update_context_node"
+    to: "end"
+    type: "direct"

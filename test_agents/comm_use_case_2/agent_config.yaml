@@ -1,0 +1,99 @@
+# =============================================================================
+# test_agents/use_case_2/agent_config.yaml
+# Use Case 2 -- Internal Broadcast Drafting
+# =============================================================================
+
+agent:
+  name: "Internal Broadcast Drafting Agent"
+  version: "1.0.0"
+  description: >
+    Drafts channel-specific versions of internal communications from
+    bullet-point talking points, preserving factual consistency across
+    email, Slack, and formal memos.
+
+channels:
+  mock_mode: "${COMM_MOCK_MODE:true}"
+  from_address: "${EMAIL_FROM:communications@company.com}"
+  slack_webhook_url: "${SLACK_WEBHOOK_URL:}"
+  slack_channel: "${SLACK_DEFAULT_CHANNEL:#company-updates}"
+  teams_webhook_url: "${TEAMS_WEBHOOK_URL:}"
+
+guardrails:
+  enabled: true
+  max_input_length: 15000
+  pii_detection: false
+  block_on_pii: false
+
+memory:
+  type: "in_memory"
+  max_history_entries: 10
+
+observability:
+  langfuse_enabled: false
+  trace_all_nodes: true
+
+workflows:
+  broadcast_drafting:
+    # graph_config: "agent_communication/test_agents/use_case_2/config/workflows/broadcast_drafting.yaml"
+    graph_config: "config/workflows/broadcast_drafting.yaml"
+
+llm:
+  provider: "${LLM_PROVIDER:openai}"
+  temperature: 0.4
+  max_tokens: 3000
+  providers:
+    openai:
+      model: "gpt-4o"
+      temperature: 0.4
+      max_tokens: 3000
+    anthropic:
+      model: "claude-sonnet-4-20250514"
+      temperature: 0.4
+      max_tokens: 3000
+    azure_openai:
+      model: "${AZURE_OPENAI_DEPLOYMENT:gpt-4o}"
+      api_version: "${AZURE_OPENAI_API_VERSION:2024-02-01}"
+      temperature: 0.4
+      max_tokens: 3000
+
+prompts:
+
+  comm_broadcast_draft:
+    langfuse_name: "comm_broadcast_draft_internal"
+    version: "latest"
+    fallback: |
+      You are the company's internal communications specialist.
+      Draft a {channel} version of this internal policy communication.
+
+      Talking points (SOURCE OF TRUTH -- do not alter facts):
+      {talking_points}
+
+      Channel: {channel}
+      Channel rules: {channel_rules}
+      Tone: {tone} | Max length: {max_length} words
+
+      CRITICAL RULES:
+      - Preserve ALL factual statements verbatim (dates, names, numbers, policy details)
+      - Adapt ONLY tone, format, and length to match the {channel} channel
+      - For Slack: use bullet points, emojis OK, keep conversational and concise
+      - For email: professional opening (Dear Team,), clear sections, action items, signature
+      - For memo: use formal header TO/FROM/DATE/RE, numbered paragraphs, formal closing
+      - Flag with [REVIEW NEEDED] if any factual statement is ambiguous
+
+  comm_check_consistency:
+    langfuse_name: "comm_check_consistency_broadcast"
+    version: "latest"
+    fallback: |
+      You are a communications editor. Check these draft versions for
+      factual contradictions. Return ONLY a JSON object.
+
+      Drafts: {drafts}
+      Reference history: {history}
+
+      Compare FACTS only: dates, names, policy terms, numbers, deadlines.
+      Ignore tone and style differences.
+
+      {{"is_consistent": true,
+        "contradictions": [],
+        "suggested_fixes": [],
+        "confidence": 0.95}}

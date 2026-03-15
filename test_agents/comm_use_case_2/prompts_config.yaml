@@ -1,0 +1,105 @@
+# ============================================================
+# config/prompts_config.yaml
+# Prompt template registry (Langfuse-first, local YAML fallback)
+# ============================================================
+
+prompts:
+
+  comm_detect_channel:
+    langfuse_name: "comm_detect_channel"
+    version: "latest"
+    fallback: |
+      Analyse this inbound message payload and detect the communication channel.
+      Return ONLY a valid JSON object:
+
+      Payload: {payload}
+
+      {{"channel": "email", "sender": "...", "sender_email": "...",
+        "subject": "...", "body": "...", "timestamp": "...",
+        "thread_id": null, "raw_metadata": {{}}}}
+
+      Channel must be one of: email, chat, slack, teams, api, sms, voice, memo
+
+  comm_classify_message:
+    langfuse_name: "comm_classify_message"
+    version: "latest"
+    fallback: |
+      Classify this inbound communication message. Return ONLY a JSON object.
+
+      Channel: {channel}
+      Message: {body}
+      Prior context: {context_summary}
+
+      {{"classification": "automated_response",
+        "priority": "medium",
+        "sentiment": "neutral",
+        "topic": "general enquiry",
+        "requires_human": false,
+        "escalation_reason": null}}
+
+      classification options: automated_response | human_escalation | acknowledgement_only
+      priority options: low | medium | high | urgent
+      sentiment options: positive | neutral | negative
+
+  comm_draft_response:
+    langfuse_name: "comm_draft_response"
+    version: "latest"
+    fallback: |
+      Draft a response for this customer communication.
+      Channel: {channel}
+      Channel rules: {channel_rules}
+      Classification: {classification}
+      Original message: {body}
+      Conversation history: {history}
+      Additional instructions: {instructions}
+
+      Write a {tone} response suitable for {channel}.
+      Maximum: {max_length} words.
+      Be empathetic, clear, and actionable.
+      Do NOT start with "Dear [name]" unless the channel is email.
+
+  comm_check_consistency:
+    langfuse_name: "comm_check_consistency"
+    version: "latest"
+    fallback: |
+      Check these draft responses for factual contradictions or inconsistencies
+      with prior communications. Return ONLY a JSON object.
+
+      Drafts: {drafts}
+      Prior thread history: {history}
+
+      {{"is_consistent": true,
+        "contradictions": [],
+        "suggested_fixes": [],
+        "confidence": 0.95}}
+
+      Flag ONLY factual contradictions (dates, names, amounts, commitments).
+      Do NOT flag tone or style differences.
+
+  comm_broadcast_draft:
+    langfuse_name: "comm_broadcast_draft"
+    version: "latest"
+    fallback: |
+      Draft a {channel} version of this internal company communication.
+
+      Talking points: {talking_points}
+      Channel: {channel}
+      Channel rules: {channel_rules}
+      Tone: {tone}
+      Maximum length: {max_length} words
+
+      Rules:
+      - Preserve ALL factual statements exactly as given
+      - Adapt only the style, tone, and length for the {channel} channel
+      - Do not introduce new facts or omit key facts
+      - For Slack: use bullet points, keep concise, conversational
+      - For email: professional opening, structured paragraphs, clear call to action
+      - For memo: formal header (TO/FROM/DATE/RE), numbered sections, signatures
+
+  comm_summarise_context:
+    langfuse_name: "comm_summarise_context"
+    version: "latest"
+    fallback: |
+      Summarise this conversation thread in 2-3 sentences for context handoff.
+      Thread: {history}
+      Focus on: key issues raised, actions promised, current status.

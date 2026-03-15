@@ -1,0 +1,124 @@
+# ============================================================
+# config/workflows/omnichannel_response.yaml
+# Use Case 1: Omnichannel Customer Response
+# ============================================================
+
+workflow:
+  name: "omnichannel_response"
+  description: >
+    Maintains unified context across channels (email, chat, voice), drafts
+    coherent resolution responses, selects reply channel, logs to CRM.
+  entry_point: "detect_channel_node"
+  state_schema: "agent_communication.schemas.graph_state.OmnichannelState"
+
+node_config:
+  omnichannel:
+    max_history_entries: 20
+    escalation_keywords:
+      - urgent
+      - lawyer
+      - legal
+      - sue
+      - refund
+      - unacceptable
+      - escalate
+      - complaint
+      - ombudsman
+    escalation_channel: "email"
+    reply_channel_preference:
+      email: "email"
+      chat: "chat"
+      slack: "slack"
+      voice: "email"   # voice transcripts get email reply
+      api: "api"
+
+  channel_rules:
+    email:
+      tone: "professional"
+      max_words: 300
+      format: "paragraphs"
+      greeting: true
+      signature: true
+    chat:
+      tone: "friendly_casual"
+      max_words: 80
+      format: "plain_text"
+      greeting: false
+      signature: false
+    slack:
+      tone: "conversational"
+      max_words: 120
+      format: "markdown_bullets"
+      greeting: false
+      signature: false
+    api:
+      tone: "technical_concise"
+      max_words: 150
+      format: "json_safe"
+      greeting: false
+      signature: false
+    default:
+      tone: "professional"
+      max_words: 200
+      format: "plain_text"
+
+nodes:
+  - id: "detect_channel_node"
+    type: "logic_node"
+    description: "Detect inbound channel and normalise payload to unified schema"
+
+  - id: "load_context_node"
+    type: "memory_node"
+    description: "Load conversation history for current thread/session"
+
+  - id: "classify_message_node"
+    type: "llm_node"
+    description: "Classify message: automated | escalation | acknowledgement"
+
+  - id: "draft_response_node"
+    type: "llm_node"
+    description: "Draft channel-aware response with tone/length adaptation"
+
+  - id: "check_consistency_node"
+    type: "llm_node"
+    description: "Check draft does not contradict prior communications"
+
+  - id: "dispatch_response_node"
+    type: "tool_node"
+    description: "Route response to correct channel adapter"
+
+  - id: "update_context_node"
+    type: "memory_node"
+    description: "Persist history, metadata, delivery status; log to CRM"
+
+  - id: "end"
+    type: "end_node"
+
+edges:
+  - from: "detect_channel_node"
+    to: "load_context_node"
+    type: "direct"
+
+  - from: "load_context_node"
+    to: "classify_message_node"
+    type: "direct"
+
+  - from: "classify_message_node"
+    to: "draft_response_node"
+    type: "direct"
+
+  - from: "draft_response_node"
+    to: "check_consistency_node"
+    type: "direct"
+
+  - from: "check_consistency_node"
+    to: "dispatch_response_node"
+    type: "direct"
+
+  - from: "dispatch_response_node"
+    to: "update_context_node"
+    type: "direct"
+
+  - from: "update_context_node"
+    to: "end"
+    type: "direct"

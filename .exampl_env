@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Agentic Accelerator v4 — Root Environment Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# Copy this file to .env and fill in your values.
+# All agents read from this single root .env via python-dotenv.
+
+# ── LLM Control ──────────────────────────────────────────────────────────────
+# Set CALL_LLM=true to use a real LLM provider (OpenAI or Anthropic).
+# Set CALL_LLM=false (default) to use the built-in MockLLM for testing.
+CALL_LLM=true
+
+# ── LLM Provider (used only when CALL_LLM=true) ──────────────────────────────
+# Options: "anthropic" | "openai"
+LLM_PROVIDER=openai
+
+# Anthropic — set when LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-6
+
+# OpenAI — set when LLM_PROVIDER=openai
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o
+
+# Azure OpenAI — set when LLM_PROVIDER=azure_openai
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+
+# ── LLM Sampling Parameters ───────────────────────────────────────────────────
+LLM_TEMPERATURE=0.1
+LLM_MAX_TOKENS=4096
+
+# ── Langfuse Observability ───────────────────────────────────────────────────
+# Set LANGFUSE_ENABLED=true and fill in keys to enable tracing.
+# Set LANGFUSE_ENABLED=false (default) to disable — no keys needed.
+LANGFUSE_ENABLED=true
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_SECRET_KEY=
+LANGFUSE_HOST=https://cloud.langfuse.com
+
+# ── Application ───────────────────────────────────────────────────────────────
+APP_ENV=development
+LOG_LEVEL=INFO

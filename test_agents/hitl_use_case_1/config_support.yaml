@@ -1,0 +1,48 @@
+configurable:
+  checkpoints:
+    - name: "escalation_review"
+      condition: "state.get('risk_score', 0) > 0.7"
+      require_approval: true
+
+ 
+# llm:
+#   provider: openai          # openai | anthropic
+#   model: gpt-4o-mini
+#   temperature: 0.0
+#   max_tokens: 4096
+#   streaming: false
+
+# agent:
+#   name: agent_hitl
+#   max_iterations: 10
+#   recursion_limit: 50
+
+# memory:
+#   type: in_memory # in_memory | chroma | pinecone
+#   embedding_model: text-embedding-3-small
+
+# observability:
+#   langfuse_enabled: true
+#   trace_level: INFO
+
+# guardrails:
+#   enabled: true
+#   max_output_length: 8192
+
+# workflow:
+#   name: "generic_hitl_workflow"
+#   enable_human_loop: true
+#   timeout_minutes: 60
+
+# checkpoints:
+#   - name: "high_risk_action"
+#     condition: "state.get('risk_score', 0) > 0.7"
+#     require_approval: true
+
+#   - name: "final_output_review"
+#     condition: "state.get('requires_review') == True"
+#     require_approval: true
+
+# persistence:
+#   backend: "sqlite"
+#   db_path: "./hitl.db"

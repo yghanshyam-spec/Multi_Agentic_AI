@@ -1,0 +1,66 @@
+# =============================================================================
+# test_agents/use_case_1/test_scenarios.yaml
+# Test scenarios for Omnichannel Customer Response
+# =============================================================================
+
+scenarios:
+
+  - id: "UC1-001"
+    description: "Email complaint about delayed order -- automated response"
+    channel: "email"
+    sender: "jane.smith@gmail.com"
+    sender_email: "jane.smith@gmail.com"
+    subject: "Order #ORD-4821 still not arrived after 2 weeks"
+    body: |
+      Hi,
+      I placed order #ORD-4821 two weeks ago and it still hasn't arrived.
+      Your website says it was delivered on the 3rd but I have received nothing.
+      I've tried calling but waited 40 minutes with no answer.
+      Please resolve this immediately.
+      Jane Smith
+    expected:
+      classification: "automated_response"
+      sentiment: "negative"
+      requires_human: false
+
+  - id: "UC1-002"
+    description: "Follow-up chat from same customer (thread continuity)"
+    channel: "chat"
+    sender: "jane.smith@gmail.com"
+    body: "Still no update on my missing order. This is unacceptable."
+    expected:
+      classification: "human_escalation"
+      requires_human: true
+
+  - id: "UC1-003"
+    description: "Voice transcript of final escalation call"
+    channel: "voice"
+    sender: "jane.smith@gmail.com"
+    body: |
+      Customer called in stating the missing delivery issue from email has
+      not been resolved. Customer is frustrated and mentioned consulting
+      a lawyer if not resolved in 24 hours. Requesting full refund and
+      compensation.
+    expected:
+      classification: "human_escalation"
+      priority: "urgent"
+      requires_human: true
+
+  - id: "UC1-004"
+    description: "Positive feedback via Slack webhook"
+    channel: "slack"
+    sender: "customer_bob"
+    body: "Just wanted to say the support team was absolutely excellent today. Very impressed!"
+    expected:
+      classification: "automated_response"
+      sentiment: "positive"
+      requires_human: false
+
+  - id: "UC1-005"
+    description: "API webhook -- technical support request"
+    channel: "api"
+    sender: "developer@techcorp.com"
+    body: "API integration returning 401 errors intermittently. Credentials are correct."
+    expected:
+      classification: "automated_response"
+      topic: "technical support"

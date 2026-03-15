@@ -1,0 +1,18 @@
+# agents/generator/config/config.yaml
+agent:
+  name: generator_agent
+  version: "4.0"
+  description: "Multi-template document generation agent"
+
+llm:
+  temperature: 0.3
+  max_tokens: 8192
+
+generation:
+  default_template: incident_report_v2
+  max_sections: 20
+  review_threshold: 7
+
+prompts:
+  registry: langfuse
+  fallback: defaults.py

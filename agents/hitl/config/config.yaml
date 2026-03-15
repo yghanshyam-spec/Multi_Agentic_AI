@@ -1,0 +1,8 @@
+# agents/hitl/config/config.yaml
+agent:
+  name: hitl_agent
+  version: "4.0"
+hitl:
+  default_timeout_seconds: 300
+  auto_approve_low_risk: false
+  approval_channels: [email, slack, ui]

@@ -1,0 +1,74 @@
+# =============================================================================
+# test_agents/use_case_2/test_scenarios.yaml
+# Test scenarios for Internal Broadcast Drafting
+# =============================================================================
+
+scenarios:
+
+  - id: "UC2-001"
+    description: "Work-from-home policy change -- draft for email, Slack, memo"
+    target_channels:
+      - email
+      - slack
+      - memo
+    talking_points: |
+      - Effective March 1, 2025, all employees may work from home up to 3 days per week
+      - Office anchor days are Tuesday and Thursday (mandatory in-office)
+      - Employees must notify their manager by Friday of each week with the following week's WFH schedule
+      - Home office equipment allowance of $500 per employee (one-time, claim by June 30, 2025)
+      - Exceptions for roles requiring physical presence (manufacturing, facilities) -- HR to communicate separately
+      - Questions: contact HR at hr@company.com or use the HR portal
+    expected:
+      draft_count: 3
+      is_consistent: true
+      channels_dispatched:
+        - email
+        - slack
+        - memo
+
+  - id: "UC2-002"
+    description: "Quarterly all-hands meeting announcement -- email and Slack"
+    target_channels:
+      - email
+      - slack
+    talking_points: |
+      - Q1 All-Hands meeting: Thursday, February 15, 2025 at 2:00 PM EST
+      - Virtual via Zoom (link will be shared 30 minutes before)
+      - Agenda: Q4 results review, 2025 strategy preview, CEO Q&A
+      - Duration: 90 minutes
+      - Recording will be available on the intranet within 48 hours
+      - Submit questions in advance at: allhands@company.com
+    expected:
+      draft_count: 2
+      is_consistent: true
+
+  - id: "UC2-003"
+    description: "Benefits update with specific dates -- consistency-critical"
+    target_channels:
+      - email
+      - slack
+      - memo
+    talking_points: |
+      - New health insurance provider: BlueCross BlueShield, effective January 1, 2026
+      - Open enrollment period: November 1-15, 2025 (firm deadline, no extensions)
+      - Premium increase: 8% for individual, 12% for family plans
+      - New dental coverage included at no additional cost for all employees
+      - HSA contribution limit increases to $4,150 (individual) and $8,300 (family) for 2026
+      - Benefits fair: October 28, 2025, Main conference room, 10am-4pm
+    expected:
+      draft_count: 3
+      is_consistent: true
+
+  - id: "UC2-004"
+    description: "Security policy update -- email only, formal tone"
+    target_channels:
+      - email
+    talking_points: |
+      - Mandatory multi-factor authentication (MFA) for all systems effective immediately
+      - Employees have 7 days to enroll (deadline: end of current month)
+      - IT helpdesk available for setup support: it-help@company.com or ext 4400
+      - Non-compliant accounts will be suspended after the deadline
+      - MFA setup guide available on the intranet under IT Security
+    expected:
+      draft_count: 1
+      is_consistent: true

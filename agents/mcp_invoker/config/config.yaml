@@ -1,0 +1,28 @@
+# agents/mcp_invoker/config/config.yaml
+# YAML configuration for LLMs and environment settings.
+# Values here are overridden by root .env variables.
+
+agent:
+  name: mcp_invoker
+  category: Integration
+  version: "4.0.0"
+
+llm:
+  # Inherits CALL_LLM / LLM_PROVIDER / ANTHROPIC_MODEL from root .env
+  # Override here for agent-specific needs:
+  temperature: 0.1
+  max_tokens: 4096
+
+prompts:
+  # Langfuse prompt keys (optional — built-in defaults used if not set)
+  # classify: "mcp_invoker_classify"
+  # extract:  "mcp_invoker_extract"
+
+observability:
+  # Inherits LANGFUSE_* from root .env
+  langfuse_enabled: ${LANGFUSE_ENABLED:-false}
+  trace_level: INFO
+
+guardrails:
+  pii_detection: true
+  max_input_chars: 32000

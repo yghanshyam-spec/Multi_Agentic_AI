@@ -1,0 +1,108 @@
+# =============================================================================
+# test_agents/use_case_1/agent_config.yaml
+# Use Case 1 -- Omnichannel Customer Response
+# Single consolidated config file (LLM + prompts + workflows inline)
+# =============================================================================
+
+agent:
+  name: "Omnichannel Customer Response Agent"
+  version: "1.0.0"
+  description: >
+    Maintains unified context across email, chat, and voice channels.
+    Drafts coherent resolution responses and logs full threads to CRM.
+
+channels:
+  mock_mode: "${COMM_MOCK_MODE:true}"
+  from_address: "${EMAIL_FROM:support@company.com}"
+  smtp_host: "${SMTP_HOST:}"
+  slack_webhook_url: "${SLACK_WEBHOOK_URL:}"
+  slack_channel: "${SLACK_DEFAULT_CHANNEL:#customer-support}"
+  teams_webhook_url: "${TEAMS_WEBHOOK_URL:}"
+  chat_api_url: "${CHAT_API_URL:}"
+
+crm:
+  enabled: true
+  mock_mode: true
+
+guardrails:
+  enabled: true
+  max_input_length: 10000
+  pii_detection: true
+  block_on_pii: false
+
+memory:
+  type: "in_memory"
+  max_history_entries: 20
+
+observability:
+  langfuse_enabled: false
+  trace_all_nodes: true
+
+workflows:
+  omnichannel_response:
+    # graph_config: "agent_communication/test_agents/use_case_1/config/workflows/omnichannel_response.yaml"
+    graph_config: "config/workflows/omnichannel_response.yaml"
+
+# Inline LLM config
+llm:
+  provider: "${LLM_PROVIDER:openai}"
+  temperature: 0.3
+  max_tokens: 2048
+  providers:
+    openai:
+      model: "gpt-4o"
+      temperature: 0.3
+      max_tokens: 2048
+    anthropic:
+      model: "claude-sonnet-4-20250514"
+      temperature: 0.3
+      max_tokens: 2048
+    azure_openai:
+      model: "${AZURE_OPENAI_DEPLOYMENT:gpt-4o}"
+      api_version: "${AZURE_OPENAI_API_VERSION:2024-02-01}"
+      temperature: 0.3
+      max_tokens: 2048
+
+# Inline prompts (override defaults for customer support context)
+prompts:
+
+  comm_classify_message:
+    langfuse_name: "comm_classify_message_support"
+    version: "latest"
+    fallback: |
+      Classify this customer support message. Return ONLY JSON.
+
+      Channel: {channel}
+      Message: {body}
+      Prior context: {context_summary}
+
+      {{"classification": "automated_response",
+        "priority": "medium",
+        "sentiment": "negative",
+        "topic": "customer complaint",
+        "requires_human": false,
+        "escalation_reason": null}}
+
+      Escalate to human if: legal threats, multiple prior contacts with no resolution,
+      explicitly asks for supervisor, mentions regulatory bodies.
+
+  comm_draft_response:
+    langfuse_name: "comm_draft_response_support"
+    version: "latest"
+    fallback: |
+      You are a senior customer support specialist. Draft a response to this
+      customer communication.
+
+      Channel: {channel}
+      Channel rules: {channel_rules}
+      Classification: {classification}
+      Customer message: {body}
+      Conversation history: {history}
+      Instructions: {instructions}
+
+      Guidelines:
+      - Acknowledge the customer's concern first
+      - Be empathetic and take ownership
+      - Provide a clear resolution or next step
+      - Tone: {tone} | Max length: {max_length} words
+      - Do NOT use corporate jargon or deflect
