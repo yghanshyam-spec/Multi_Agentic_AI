@@ -49,24 +49,24 @@ _ROUTER_GRAPH = _build_router_graph()
 def _load_agents() -> Dict[str, Callable]:
     """Lazy-import all 21 agent runners. Allows partial availability."""
     from agents.router.core.engine import run_router
-    from agents.intent.core.engine import run_intent_agent
-    from agents.planner.core.engine import run_planner_agent
-    from agents.workflow.core.engine import run_workflow_agent
-    from agents.reasoning.core.engine import run_reasoning_agent
-    from agents.generator.core.engine import run_generator_agent
+    from agents.intent.graph       import run_intent_agent
+    from agents.planner.graph      import run_planner_agent
+    from agents.workflow.graph     import run_workflow_agent
+    from agents.reasoning.graph    import run_reasoning_agent
+    from agents.generator.graph    import run_generator_agent
     from agents.communication.core.engine import run_communication_agent
-    from agents.execution.core.engine import run_execution_agent, run_hitl_agent, run_audit_agent
-    from agents.translation.core.engine import run_translation_agent
-    from agents.email_handler.core.engine import run_email_handler_agent
-    from agents.sql.core.engine import run_sql_agent
-    from agents.pdf_ingestor.core.engine import run_pdf_ingestor_agent
-    from agents.vector_query.core.engine import run_vector_query_agent
-    from agents.mcp_invoker.core.engine import run_mcp_invoker_agent
-    from agents.salesforce.core.engine import run_salesforce_agent
-    from agents.sap.core.engine import run_sap_agent
-    from agents.notification.core.engine import run_notification_agent
-    from agents.scheduling.core.engine import run_scheduling_agent
-    from agents.api_query.core.engine import run_api_query_agent
+    from agents.execution.graph    import run_execution_agent, run_hitl_agent, run_audit_agent
+    from agents.translation.graph  import run_translation_agent
+    from agents.email_handler.graph import run_email_handler_agent
+    from agents.sql.graph          import run_sql_agent
+    from agents.pdf_ingestor.graph import run_pdf_ingestor_agent
+    from agents.vector_query.graph import run_vector_query_agent
+    from agents.mcp_invoker.graph  import run_mcp_invoker_agent
+    from agents.salesforce.graph   import run_salesforce_agent
+    from agents.sap.graph          import run_sap_agent
+    from agents.notification.graph import run_notification_agent
+    from agents.scheduling.graph   import run_scheduling_agent
+    from agents.api_query.graph    import run_api_query_agent
 
     return {
         # ── Layer 0 — Entry ──────────────────────────────────────────────────
@@ -356,12 +356,8 @@ def _extract_key_output(agent: str, state: dict) -> dict:
         "generator":     lambda s: {"template": s.get("template_id"),
                                     "sections": len(s.get("generated_sections", [])),
                                     "word_count": len((s.get("final_document") or "").split())},
-        "communication": lambda s: {
-                             "channel":        s.get("detected_channel"),
-                             "dispatched":     (s.get("dispatch_result") or {}).get("status", ""),
-                             "draft_response": (s.get("draft_response") or "")[:200],
-                             "agent_response": s.get("agent_response", {}),
-                         },
+        "communication": lambda s: {"channel": s.get("detected_channel"),
+                                    "dispatched": s.get("dispatch_result", {}).get("status", "")},
         "execution":     lambda s: {"exit_code": (s.get("execution_output") or {}).get("exit_code"),
                                     "rows_affected": (s.get("execution_output") or {}).get("rows_affected"),
                                     "report": (s.get("execution_report") or "")[:200]},
