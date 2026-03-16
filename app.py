@@ -65,6 +65,19 @@ hr{border-color:#e5e7eb;}.stAlert{border-radius:8px;}
 # USE CASE CATALOGUE
 # ─────────────────────────────────────────────────────────────────────────────
 USE_CASES = [
+    # {"key":"uc1_sales_intelligence","label":"UC1 · Multilingual Sales Intelligence Report  (9 agents)",
+    #  "short":"UC1 — Sales Intelligence","agent_count":9,"config":UC1_SALES_INTELLIGENCE_CONFIG,"prompt":PROMPT_UC1,
+    #  "badge_color":"#1d4ed8","description":"APAC pipeline health · Salesforce + SQL + Market API · Mandarin translation · Email delivery",
+    #  "agents":["router","intent","salesforce","sql","api_query","generator","translation","communication","audit"]},
+    # {"key":"uc2_procurement_exception","label":"UC2 · Procurement Exception & Vendor Dispute  (9 agents)",
+    #  "short":"UC2 — Procurement Exception","agent_count":9,"config":UC3_PROCUREMENT_EXCEPTION_CONFIG,"prompt":PROMPT_UC3,
+    #  "badge_color":"#059669","description":"Vendor dispute email · SAP PO/GR pull · Evidence reasoning · HITL approval · SOX audit",
+    #  "agents":["router","email_handler","sap","reasoning","hitl","execution","communication","notification","audit"]},
+    # {"key":"uc3_customer_support","label":"UC3 · AI-Powered Multilingual Customer Support  (10 agents)",
+    #  "short":"UC3 — Customer Support Desk","agent_count":10,"config":UC4_CUSTOMER_SUPPORT_CONFIG,"prompt":PROMPT_UC4,
+    #  "badge_color":"#0891b2","description":"Tamil→EN translation · KB RAG · MCP live status · Escalation reasoning · HITL · Tamil reply",
+    #  "agents":["router","translation","intent","vector_query","mcp_invoker","reasoning","generator","hitl","communication","audit"]},
+  
     {"key":"uc1_sales_intelligence","label":"UC1 · Multilingual Sales Intelligence Report  (9 agents)",
      "short":"UC1 — Sales Intelligence","agent_count":9,"config":UC1_SALES_INTELLIGENCE_CONFIG,"prompt":PROMPT_UC1,
      "badge_color":"#1d4ed8","description":"APAC pipeline health · Salesforce + SQL + Market API · Mandarin translation · Email delivery",
