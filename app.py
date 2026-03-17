@@ -296,10 +296,10 @@ def _render_results(result: PipelineResult, ruc: dict, show_raw: bool,
 
     # TAB 1 ── Agent Flow & Messages ──────────────────────────────────────────
     with t1:
-        st.markdown("#### Inter-Agent Message Flow  *(via AgentResponse)*")
-        st.caption("Each card shows the AgentResponse output from that agent. "
-                   "↓ arrows show data direction through the pipeline.")
-        _render_agent_message_flow(result.steps)
+        # st.markdown("#### Inter-Agent Message Flow  *(via AgentResponse)*")
+        # st.caption("Each card shows the AgentResponse output from that agent. "
+        #            "↓ arrows show data direction through the pipeline.")
+        # _render_agent_message_flow(result.steps)
 
         st.markdown("---")
         st.markdown("#### Execution Detail")
