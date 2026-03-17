@@ -65,19 +65,6 @@ hr{border-color:#e5e7eb;}.stAlert{border-radius:8px;}
 # USE CASE CATALOGUE
 # ─────────────────────────────────────────────────────────────────────────────
 USE_CASES = [
-    # {"key":"uc1_sales_intelligence","label":"UC1 · Multilingual Sales Intelligence Report  (9 agents)",
-    #  "short":"UC1 — Sales Intelligence","agent_count":9,"config":UC1_SALES_INTELLIGENCE_CONFIG,"prompt":PROMPT_UC1,
-    #  "badge_color":"#1d4ed8","description":"APAC pipeline health · Salesforce + SQL + Market API · Mandarin translation · Email delivery",
-    #  "agents":["router","intent","salesforce","sql","api_query","generator","translation","communication","audit"]},
-    # {"key":"uc2_procurement_exception","label":"UC2 · Procurement Exception & Vendor Dispute  (9 agents)",
-    #  "short":"UC2 — Procurement Exception","agent_count":9,"config":UC3_PROCUREMENT_EXCEPTION_CONFIG,"prompt":PROMPT_UC3,
-    #  "badge_color":"#059669","description":"Vendor dispute email · SAP PO/GR pull · Evidence reasoning · HITL approval · SOX audit",
-    #  "agents":["router","email_handler","sap","reasoning","hitl","execution","communication","notification","audit"]},
-    # {"key":"uc3_customer_support","label":"UC3 · AI-Powered Multilingual Customer Support  (10 agents)",
-    #  "short":"UC3 — Customer Support Desk","agent_count":10,"config":UC4_CUSTOMER_SUPPORT_CONFIG,"prompt":PROMPT_UC4,
-    #  "badge_color":"#0891b2","description":"Tamil→EN translation · KB RAG · MCP live status · Escalation reasoning · HITL · Tamil reply",
-    #  "agents":["router","translation","intent","vector_query","mcp_invoker","reasoning","generator","hitl","communication","audit"]},
-  
     {"key":"uc1_sales_intelligence","label":"UC1 · Multilingual Sales Intelligence Report  (9 agents)",
      "short":"UC1 — Sales Intelligence","agent_count":9,"config":UC1_SALES_INTELLIGENCE_CONFIG,"prompt":PROMPT_UC1,
      "badge_color":"#1d4ed8","description":"APAC pipeline health · Salesforce + SQL + Market API · Mandarin translation · Email delivery",
@@ -196,6 +183,55 @@ def _extract_agent_message(step: StepResult) -> str:
         if v:
             return str(v)[:600]
     return "(no output)"
+
+
+def _extract_agent_input(step: "StepResult") -> dict:
+    """
+    Reconstruct the input that was passed to this agent, shown in Execution Detail.
+    Reads from full_state: raw_input, agent_config (state["config"]), working_memory keys.
+    """
+    state = step.full_state
+    cfg   = state.get("config", {})
+
+    input_data = {
+        "step_id":   step.step_id,
+        "agent":     step.agent,
+        "raw_input": state.get("raw_input", ""),
+    }
+
+    # Show key config fields — skip empty values and truncate long strings
+    cfg_clean = {}
+    for k, v in cfg.items():
+        if v is None or v == "" or v == [] or v == {}:
+            continue
+        if isinstance(v, str) and len(v) > 300:
+            cfg_clean[k] = v[:300] + "…"
+        elif isinstance(v, dict):
+            cfg_clean[k] = {
+                ck: (str(cv)[:150] + "…" if isinstance(cv, str) and len(str(cv)) > 150 else cv)
+                for ck, cv in v.items()
+                if cv not in (None, "", [], {})
+            }
+        else:
+            cfg_clean[k] = v
+    if cfg_clean:
+        input_data["agent_config"] = cfg_clean
+
+    # Show upstream AgentResponse correlation if present
+    upstream = cfg.get("upstream_response") or cfg.get("routing_context")
+    if upstream and isinstance(upstream, dict):
+        input_data["upstream_context"] = {
+            "correlation_id": upstream.get("correlation_id", ""),
+            "from_agent":     upstream.get("agent_type", ""),
+            "payload_keys":   list(upstream.get("payload", {}).keys()),
+        }
+
+    # Show working_memory keys (not values — can be very large)
+    wm = state.get("working_memory", {})
+    if wm:
+        input_data["working_memory_keys"] = list(wm.keys())
+
+    return input_data
 
 def _render_agent_message_flow(steps):
     """Render inter-agent AgentResponse message chain."""
@@ -317,26 +353,71 @@ def _render_results(result: PipelineResult, ruc: dict, show_raw: bool,
             with st.expander(
                 f"{'✓' if ok else '✗'} {step.step_label}  ·  {step.duration_ms}ms  ·  "
                 f"{len(step.trace)} nodes  ·  {len(step.audit_events)} events", expanded=False):
-                c1,c2 = st.columns(2)
-                with c1:
-                    st.markdown(f"**Status:** `{step.status}`")
-                    st.markdown(f"**Agent:** `{step.agent}`")
-                    if step.key_output:
-                        st.markdown("**Key Outputs:**")
-                        for k,v in step.key_output.items():
-                            if v not in (None,"",[]):
-                                st.markdown(f"- `{k}`: {str(v)[:200]}")
+
+                # ── Row 1: Input + AgentResponse side by side ─────────────────
+                ic, oc = st.columns(2)
+                with ic:
+                    st.markdown(
+                        "<div style='font-size:11px;font-weight:600;color:#1d4ed8;"
+                        "letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;'>"
+                        "📥 Input Passed to Agent</div>",
+                        unsafe_allow_html=True)
+                    agent_input = _extract_agent_input(step)
+                    st.json(agent_input)
+                with oc:
+                    st.markdown(
+                        "<div style='font-size:11px;font-weight:600;color:#059669;"
+                        "letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;'>"
+                        "📤 AgentResponse Output</div>",
+                        unsafe_allow_html=True)
                     ar = step.full_state.get("agent_response")
                     if ar and isinstance(ar, dict):
-                        st.markdown("**AgentResponse:**")
-                        st.json({k:str(v)[:200] for k,v in ar.items()})
-                with c2:
+                        # Show full AgentResponse in JSON, truncating only very long strings
+                        ar_display = {}
+                        for k, v in ar.items():
+                            if isinstance(v, str) and len(v) > 400:
+                                ar_display[k] = v[:400] + "…"
+                            elif isinstance(v, dict):
+                                ar_display[k] = {
+                                    dk: (str(dv)[:200] + "…" if isinstance(dv, str) and len(str(dv)) > 200 else dv)
+                                    for dk, dv in v.items()
+                                }
+                            else:
+                                ar_display[k] = v
+                        st.json(ar_display)
+                    else:
+                        st.caption("No AgentResponse envelope set.")
+
+                # ── Row 2: Status + Key Outputs + Node Trace ─────────────────
+                st.markdown("---")
+                mc, tc = st.columns(2)
+                with mc:
+                    st.markdown(
+                        f"**Status:** `{step.status}`  &nbsp;&nbsp; **Agent:** `{step.agent}`")
+                    if step.key_output:
+                        st.markdown(
+                            "<div style='font-size:11px;font-weight:600;color:#374151;"
+                            "letter-spacing:0.8px;text-transform:uppercase;margin:8px 0 4px;'>"
+                            "Key Outputs</div>",
+                            unsafe_allow_html=True)
+                        ko_display = {
+                            k: (str(v)[:300] + "…" if isinstance(v, str) and len(str(v)) > 300 else v)
+                            for k, v in step.key_output.items()
+                            if v not in (None, "", [], {})
+                        }
+                        st.json(ko_display)
+                with tc:
                     if step.trace:
-                        st.markdown("**Node Trace:**")
+                        st.markdown(
+                            "<div style='font-size:11px;font-weight:600;color:#374151;"
+                            "letter-spacing:0.8px;text-transform:uppercase;margin-bottom:4px;'>"
+                            "Node Trace</div>",
+                            unsafe_allow_html=True)
                         for t in step.trace:
-                            dot = "🔴" if t.get("llm_tokens_used",0)>0 else "🟢"
-                            st.markdown(f"<span style='font-family:JetBrains Mono;font-size:11px;color:#6b7280;'>"
-                                f"{dot} {t.get('node_name','?')} &nbsp; {t.get('duration_ms',0)}ms</span>",
+                            dot = "🔴" if t.get("llm_tokens_used", 0) > 0 else "🟢"
+                            st.markdown(
+                                f"<span style='font-family:JetBrains Mono;font-size:11px;color:#6b7280;'>"
+                                f"{dot} {t.get('node_name', '?')} &nbsp; {t.get('duration_ms', 0)}ms</span>",
                                 unsafe_allow_html=True)
                 if step.error:
                     st.error(f"Error: {step.error}")
@@ -349,34 +430,105 @@ def _render_results(result: PipelineResult, ruc: dict, show_raw: bool,
     # TAB 2 ── Output Report ──────────────────────────────────────────────────
     with t2:
         st.markdown("#### Generated Output")
-        r_s = _step(result,"reasoning")
+
+        # ── Reasoning conclusion ──────────────────────────────────────────────
+        r_s = _step(result, "reasoning")
         if r_s:
-            c = r_s.key_output.get("conclusion","")
+            conclusion = r_s.full_state.get("conclusion", {})
+            c = conclusion.get("conclusion", "") if isinstance(conclusion, dict) else str(conclusion)
+            if not c:
+                c = r_s.key_output.get("conclusion", "")
             if c:
-                st.markdown(f"<div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:18px;'>"
-                    f"<div style='font-size:10px;color:#166534;letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-bottom:5px;'>🧠 Reasoning — Conclusion</div>"
-                    f"<div style='color:#14532d;font-size:14px;'>{c}</div></div>", unsafe_allow_html=True)
-        for tsid in ["translation","translation_outbound","translation_inbound"]:
-            ts = _step(result,tsid)
-            if ts and ts.key_output.get("translated"):
-                txt = ts.full_state.get("final_translated_text","")
+                st.markdown(
+                    f"<div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;"
+                    f"padding:14px 18px;margin-bottom:18px;'>"
+                    f"<div style='font-size:10px;color:#166534;letter-spacing:1px;text-transform:uppercase;"
+                    f"font-weight:600;margin-bottom:5px;'>🧠 Reasoning — Conclusion</div>"
+                    f"<div style='color:#14532d;font-size:14px;line-height:1.7;'>{str(c)}</div></div>",
+                    unsafe_allow_html=True)
+
+        # ── English document (generator output) ──────────────────────────────
+        final_doc = ""
+        g_s = _step(result, "generator")
+        if g_s:
+            final_doc = (
+                g_s.full_state.get("final_document")
+                or g_s.full_state.get("refined_content")
+                or (g_s.full_state.get("agent_response") or {}).get("payload", {}).get("final_document")
+                or ""
+            )
+
+        # ── Translation output (full, no truncation) ──────────────────────────
+        translated_text = ""
+        trans_step = None
+        for tsid in ["translation", "translation_outbound", "translation_inbound"]:
+            ts = _step(result, tsid)
+            if ts:
+                txt = (
+                    ts.full_state.get("final_translated_text")
+                    or (ts.full_state.get("agent_response") or {}).get("payload", {}).get("result")
+                    or ""
+                )
                 if txt:
-                    sl = ts.key_output.get("source_lang","?")
-                    tl = ts.key_output.get("target_lang","?")
-                    st.markdown(f"<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 18px;margin-bottom:18px;'>"
-                        f"<div style='font-size:10px;color:#1d4ed8;letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-bottom:5px;'>🌐 Translation {sl} → {tl}</div>"
-                        f"<div style='color:#1e3a8a;font-size:13px;line-height:1.6;'>{str(txt)[:600]}</div></div>", unsafe_allow_html=True)
+                    translated_text = txt
+                    trans_step = ts
                     break
-        if inc_report:
+
+        # ── Render: if both exist, show tabs; else show whatever we have ──────
+        if translated_text and final_doc:
+            eng_tab, trans_tab = st.tabs([
+                f"🇬🇧 English Report",
+                f"🌐 {(trans_step.key_output.get('target_lang') or 'Translated')} Translation",
+            ])
+            with eng_tab:
+                st.markdown(final_doc)
+            with trans_tab:
+                sl = trans_step.key_output.get("source_lang", "source")
+                tl = trans_step.key_output.get("target_lang", "target")
+                qs = trans_step.key_output.get("quality_score") if trans_step else None
+                cols = st.columns([3, 1]) if qs else [st.container()]
+                with cols[0]:
+                    st.markdown(
+                        f"<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;"
+                        f"padding:4px 14px 4px 14px;margin-bottom:12px;'>"
+                        f"<span style='font-size:11px;color:#1d4ed8;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;'>"
+                        f"🌐 {sl} → {tl}</span>"
+                        + (f"&nbsp;&nbsp;<span style='font-size:11px;color:#6b7280;'>Quality score: {qs:.2f}</span>" if qs else "")
+                        + "</div>",
+                        unsafe_allow_html=True)
+                # Render translated content — preserve line breaks, support CJK
+                cjk_css = "font-size:14px;line-height:1.9;color:#1e3a8a;font-family:Arial,sans-serif;white-space:pre-wrap;"
+                st.markdown(
+                    f"<div style='{cjk_css}'>{translated_text}</div>",
+                    unsafe_allow_html=True)
+
+        elif translated_text:
+            # Translation only (no generator step)
+            sl = trans_step.key_output.get("source_lang", "?") if trans_step else "?"
+            tl = trans_step.key_output.get("target_lang", "?") if trans_step else "?"
+            st.markdown(
+                f"<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;"
+                f"padding:4px 14px;margin-bottom:12px;'>"
+                f"<span style='font-size:11px;color:#1d4ed8;font-weight:600;'>🌐 {sl} → {tl}</span></div>",
+                unsafe_allow_html=True)
+            cjk_css = "font-size:14px;line-height:1.9;color:#1e3a8a;font-family:Arial,sans-serif;white-space:pre-wrap;"
+            st.markdown(
+                f"<div style='{cjk_css}'>{translated_text}</div>",
+                unsafe_allow_html=True)
+
+        elif final_doc:
+            # English report only
+            st.markdown(final_doc)
+
+        elif inc_report:
             st.markdown(inc_report)
+
         else:
-            g = _step(result,"generator")
+            g = _step(result, "generator")
             if g:
-                pay = g.full_state.get("agent_response",{})
-                doc = (pay.get("payload",{}).get("document","") if isinstance(pay,dict) else "")
-                st.markdown(doc) if doc else st.info("Generator ran — no structured document output.")
+                st.info("Generator ran — no structured document output in state.")
             else:
-                st.info("No generator step in this pipeline.")
+                st.info("No generator or translation step in this pipeline.")
 
     # TAB 3 ── Communication ──────────────────────────────────────────────────
     with t3:
